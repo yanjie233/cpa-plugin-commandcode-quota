@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
@@ -13,25 +14,36 @@ import (
 )
 
 type managementRegistrationResponse struct {
-	Routes    []pluginapi.ManagementRoute `json:"routes,omitempty"`
-	Resources []pluginapi.ResourceRoute   `json:"resources,omitempty"`
+	Routes []pluginapi.ManagementRoute `json:"routes,omitempty"`
 }
 
-// managementRegistration 注册插件自有资源页与路由。
-// 资源页挂在 /v0/resource/plugins/<id>/panel,浏览器可直接打开;
-// 数据接口注册在 /v0/management 下,由宿主中间件负责鉴权。
+// managementRegistration 注册插件自有页面与数据接口。
+//
+// 关键约束:C ABI 插件无法提供 Go 接口 Handler,而宿主在 registerResourceRoute
+// 里要求 item.Handler != nil。唯一可行路径是用 ManagementRoute 的 legacy 写法:
+// GET + Menu 非空 → 宿主把它转成 /v0/resource/plugins/<id>/ 下的资源页。
+// 因此所有路由都声明为带 Menu 的 GET 管理路由。
 func managementRegistration() managementRegistrationResponse {
 	return managementRegistrationResponse{
-		Resources: []pluginapi.ResourceRoute{
+		Routes: []pluginapi.ManagementRoute{
 			{
-				Path:        "/panel",
+				Method:      http.MethodGet,
+				Path:        "/plugins/" + pluginID + "/panel",
 				Menu:        "CommandCode 额度",
 				Description: "5 小时 / 周 / 月额度、跳过记录与阈值。",
 			},
-		},
-		Routes: []pluginapi.ManagementRoute{
-			{Method: http.MethodGet, Path: "/plugins/" + pluginID + "/status"},
-			{Method: http.MethodGet, Path: "/plugins/" + pluginID + "/quota"},
+			{
+				Method:      http.MethodGet,
+				Path:        "/plugins/" + pluginID + "/status",
+				Menu:        "CommandCode 状态",
+				Description: "插件运行状态与最近选号记录。",
+			},
+			{
+				Method:      http.MethodGet,
+				Path:        "/plugins/" + pluginID + "/quota",
+				Menu:        "CommandCode 余额",
+				Description: "各账号最新余额快照。",
+			},
 		},
 	}
 }
@@ -44,15 +56,17 @@ func handleManagement(raw []byte) ([]byte, error) {
 	}
 
 	switch {
-	case req.Path == "/panel":
+	// 宿主把资源页请求转进来时,path 是 /v0/resource/plugins/<id>/panel。
+	// 也接受相对形式,避免不同版本差异。
+	case strings.HasSuffix(req.Path, "/panel"):
 		return okEnvelope(htmlResponse(panelHTML()))
 
-	case req.Path == "/plugins/" + pluginID + "/status":
+	case strings.HasSuffix(req.Path, "/status"):
 		payload := statusPayload()
 		body, _ := json.Marshal(payload)
 		return okEnvelope(jsonResponse(body))
 
-	case req.Path == "/plugins/" + pluginID + "/quota":
+	case strings.HasSuffix(req.Path, "/quota"):
 		body, _ := json.Marshal(map[string]any{"accounts": collectQuota()})
 		return okEnvelope(jsonResponse(body))
 	}
