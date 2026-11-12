@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Command Code 额度</title>
+<style>
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --ink:#1B2530; --muted:#5D6D7E;
+  --line:#D9DFE6; --line-soft:#E7ECF0; --track:#E4E9EE;
+  --teal:#0E7C66; --amber:#B7791F; --red:#C0392B; --violet:#6B45C0;
+  --radius:8px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1060px;margin:0 auto;padding:20px 16px 56px}
+.topbar{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;padding-bottom:14px}
+.topbar h1{font-size:19px;font-weight:650;margin:0;letter-spacing:-.01em}
+.updated{color:var(--muted);font-size:12.5px}
+.spacer{flex:1}
+button{
+  appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  border-radius:6px;padding:6px 13px;font-size:13.5px;cursor:pointer;font-family:inherit;
+}
+button:hover{border-color:#B7C2CD}
+button.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+button:disabled{opacity:.55;cursor:default}
+
+/* 总览 */
+.overview{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:18px;overflow:hidden;
+}
+.ov{padding:14px 16px;border-left:1px solid var(--line-soft)}
+.ov:first-child{border-left:0}
+.ov .lbl{font-size:11px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+.ov .num{font-size:23px;font-weight:650;letter-spacing:-.02em;margin-top:3px}
+.ov .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+/* 账号卡 */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(340px,100%),1fr));gap:14px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px 13px}
+.card.spent{background:#F3F5F7}
+.head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.name{font-size:15.5px;font-weight:650}
+.chip{font-size:10.5px;letter-spacing:.08em;border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--muted)}
+.chip.plan{color:var(--teal);border-color:#B9D8D0}
+.chip.bad{color:var(--red);border-color:#E8BEB9}
+.chip.low{color:var(--amber);border-color:#E3CDA6}
+.sub{font-size:11.5px;color:var(--muted);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap}
+
+/* 三档窗口 */
+.wins{margin-top:12px;display:flex;flex-direction:column;gap:11px}
+.win{padding-left:11px;border-left:2px solid var(--line)}
+.win[data-k="5h"]{border-left-color:var(--amber)}
+.win[data-k="week"]{border-left-color:var(--teal)}
+.win[data-k="month"]{border-left-color:var(--violet)}
+.wrow{display:flex;align-items:baseline;gap:8px}
+.wlbl{font-size:11px;letter-spacing:.08em;color:var(--muted)}
+.wpct{margin-left:auto;font-size:18px;font-weight:650;letter-spacing:-.01em}
+.win[data-k="5h"] .wpct{color:var(--amber)}
+.win[data-k="week"] .wpct{color:var(--teal)}
+.win[data-k="month"] .wpct{color:var(--violet)}
+.wpct small{font-size:10px;color:var(--muted);font-weight:400;margin-left:5px;letter-spacing:.08em}
+.bar{position:relative;height:7px;margin:6px 0 7px;background:var(--track);border-radius:4px;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;display:block;border-radius:4px}
+.win[data-k="5h"] .bar i{background:var(--amber)}
+.win[data-k="week"] .bar i{background:var(--teal)}
+.win[data-k="month"] .bar i{background:var(--violet)}
+.bar.low i{background:var(--red)!important}
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 8px}
+.nums>div{min-width:0}
+.nums i{display:block;font-style:normal;font-size:9.5px;letter-spacing:.1em;color:var(--muted);margin-bottom:1px}
+.nums b{display:block;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reset{margin-top:4px;font-size:11px;color:var(--muted)}
+.na{font-size:11.5px;color:var(--muted)}
+
+/* 用光折叠条 */
+.card.exp{border-color:#E2E7EC;background:#F7F8FA;padding:11px 15px}
+.exp-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.exp-row .name{font-size:14px;color:#6B7787}
+.badge{font-size:10px;letter-spacing:.2em;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:2px 8px;background:var(--surface)}
+.resetpill{margin-left:auto;font-size:11px;font-weight:600;color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:2px 8px;background:var(--surface);white-space:nowrap}
+
+.err{border:1px solid #E8BEB9;background:#FDF4F3;color:var(--red);border-radius:6px;padding:9px 11px;font-size:12.5px;margin-top:11px}
+.empty{border:1px dashed var(--line);border-radius:var(--radius);padding:30px;text-align:center;color:var(--muted);font-size:13px}
+.logbox{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:13px 15px}
+.logbox h2{margin:0 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.logbox pre{margin:0;font:11.5px/1.7 ui-monospace,Menlo,Consolas,monospace;color:#42505F;white-space:pre-wrap;max-height:240px;overflow:auto}
+@media (max-width:640px){
+  .overview{grid-template-columns:1fr}
+  .ov{border-left:0;border-top:1px solid var(--line-soft)}
+  .ov:first-child{border-top:0}
+  .nums{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 8px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <h1>Command Code 额度</h1>
+    <span class="updated" id="updated">读取中…</span>
+    <span class="spacer"></span>
+    <button id="refresh" class="primary" type="button">刷新</button>
+  </div>
+
+  <section class="overview" id="overview" hidden>
+    <div class="ov"><div class="lbl">5 小时合计</div><div class="num" id="ov5">—</div><div class="sub" id="ov5s"></div></div>
+    <div class="ov"><div class="lbl">周合计</div><div class="num" id="ovw">—</div><div class="sub" id="ovws"></div></div>
+    <div class="ov"><div class="lbl">月合计</div><div class="num" id="ovm">—</div><div class="sub" id="ovms"></div></div>
+  </section>
+
+  <div class="grid" id="grid"><div class="empty">读取中…</div></div>
+
+  <section class="logbox" id="logbox" hidden>
+    <h2>选号记录</h2>
+    <pre id="log"></pre>
+  </section>
+</div>
+
+<script>
+'use strict';
+
+const API = '/v0/management/plugins/commandcode-quota';
+
+const money = n => (n === null || n === undefined) ? '—' : '$' + Number(n).toFixed(2);
+const pctText = n => (n === null || n === undefined) ? '—' : Number(n).toFixed(1) + '%';
+const esc = s => String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function dateShort(ms){
+  if(!ms) return null;
+  const d = new Date(ms);
+  const p = x => String(x).padStart(2,'0');
+  return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+function resetLine(w){
+  const s = dateShort(w && w.reset_at);
+  if(!s) return '刷新时间未知';
+  const diff = w.reset_at - Date.now();
+  if(diff <= 0) return `刷新于 ${s} · 已到期`;
+  const h = Math.floor(diff/3600000), days = Math.floor(h/24);
+  const rel = days >= 1 ? `${days} 天 ${h%24} 小时`
+            : (h >= 1 ? `${h} 小时 ${Math.floor((diff%3600000)/60000)} 分` : `${Math.max(1,Math.floor(diff/60000))} 分钟`);
+  return `刷新 ${s} · 还有 ${rel}`;
+}
+
+function win(k, label, w){
+  if(!w){
+    return `<div class="win" data-k="${k}">
+      <div class="wrow"><span class="wlbl">${label}</span><span class="wpct">—</span></div>
+      <div class="bar"><i style="width:0"></i></div>
+      <div class="na">该套餐没有这一档窗口</div></div>`;
+  }
+  const pr = (w.pct_remaining === undefined) ? null : w.pct_remaining;
+  const width = pr === null ? 0 : Math.max(0, Math.min(100, pr));
+  const low = pr !== null && pr <= 15 ? ' low' : '';
+  const cells = [
+    `<div><i>剩余</i><b>${money(w.remaining)}</b></div>`,
+    `<div><i>上限</i><b>${w.cap ? money(w.cap) : '—'}</b></div>`,
+  ];
+  if(k === 'month') cells.push(`<div><i>起算</i><b>${w.reset_at ? dateShort(w.reset_at).slice(0,5) : '—'}</b></div>`);
+  return `<div class="win" data-k="${k}">
+    <div class="wrow"><span class="wlbl">${label}</span>
+      <span class="wpct">${pr === null ? '—' : pctText(pr)}<small>剩余</small></span></div>
+    <div class="bar${low}"><i style="width:${width}%"></i></div>
+    <div class="nums">${cells.join('')}</div>
+    <div class="reset">${resetLine(w)}</div></div>`;
+}
+
+function card(a){
+  const chips = [];
+  if(a.plan) chips.push(`<span class="chip plan">${esc(a.plan)}</span>`);
+  if(a.exhausted) chips.push(`<span class="chip low">额度已用光</span>`);
+  if(a.error && a.ok) chips.push(`<span class="chip low">缓存</span>`);
+  if(a.picks) chips.push(`<span class="chip">选中 ${a.picks}</span>`);
+
+  const sub = [];
+  if(a.fetched_at){
+    const d = new Date(a.fetched_at), p = x => String(x).padStart(2,'0');
+    sub.push(`取数 ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`);
+  }
+
+  const body = a.ok
+    ? `<div class="wins">
+         ${win('5h','5 小时额度', a.five_hour)}
+         ${win('week','周额度', a.weekly)}
+         ${win('month','月额度', a.monthly)}
+       </div>`
+    : `<div class="err">${esc(a.error || '取数失败')}</div>`;
+
+  return `<section class="card">
+    <div class="head"><span class="name">${esc(a.label || a.id)}</span>${chips.join('')}</div>
+    ${sub.length ? `<div class="sub">${sub.join('')}</div>` : ''}
+    ${body}
+  </section>`;
+}
+
+// 用光的账号压成一条,把重置日期露出来方便续费
+function spentBar(a){
+  const m = a.monthly || {};
+  const r = dateShort(m.reset_at);
+  return `<section class="card exp">
+    <div class="exp-row">
+      <span class="name">${esc(a.label || a.id)}</span>
+      <span class="badge">额度已用光</span>
+      <span class="resetpill">${r ? '下次重置 ' + r : '重置日未知'}</span>
+    </div>
+  </section>`;
+}
+
+function totals(list){
+  const acc = {five_hour:{rem:0,cap:0,has:false}, weekly:{rem:0,cap:0,has:false}, monthly:{rem:0,cap:0,has:false}};
+  for(const a of list){
+    if(!a.ok) continue;
+    for(const [k,src] of [['five_hour','five_hour'],['weekly','weekly'],['monthly','monthly']]){
+      const w = a[src];
+      if(!w) continue;
+      acc[k].rem += Number(w.remaining || 0);
+      if(w.cap){ acc[k].cap += Number(w.cap); acc[k].has = true; }
+    }
+  }
+  return acc;
+}
+
+function renderOverview(list){
+  const t = totals(list);
+  const box = document.getElementById('overview');
+  const map = [['5h','ov5','ov5s'],['week','ovw','ovws'],['month','ovm','ovms']];
+  const keys = ['five_hour','weekly','monthly'];
+  keys.forEach((k,i) => {
+    const a = t[k];
+    const num = document.getElementById(map[i][1]);
+    const sub = document.getElementById(map[i][2]);
+    if(!a.rem && !a.has){ num.textContent = '—'; sub.textContent = '无可用数据'; return; }
+    num.textContent = money(a.rem);
+    sub.textContent = a.has && a.cap > 0
+      ? `${pctText(a.rem/a.cap*100)} · 上限 ${money(a.cap)}`
+      : '上限未知';
+  });
+  box.hidden = false;
+}
+
+async function loadStatus(){
+  try{
+    const res = await fetch(API + '/status', {credentials:'same-origin'});
+    if(!res.ok) return null;
+    return await res.json();
+  }catch(e){ return null; }
+}
+
+async function loadQuota(){
+  const res = await fetch(API + '/quota', {credentials:'same-origin'});
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  return await res.json();
+}
+
+async function refresh(){
+  const btn = document.getElementById('refresh');
+  btn.disabled = true;
+  try{
+    const [q, st] = await Promise.all([loadQuota(), loadStatus()]);
+    const list = (q && q.accounts) || [];
+    const grid = document.getElementById('grid');
+
+    if(!list.length){
+      grid.innerHTML = '<div class="empty">没有读到 Command Code 账号<br>请在 CPA 的 AI 提供商里配置 api-key-entries</div>';
+    }else{
+      const live = list.filter(a => !a.exhausted);
+      const dead = list.filter(a => a.exhausted);
+      grid.innerHTML = live.map(card).join('') + dead.map(spentBar).join('');
+    }
+    renderOverview(list);
+
+    const d = new Date();
+    const p = x => String(x).padStart(2,'0');
+    document.getElementById('updated').textContent =
+      `更新于 ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` +
+      (st && st.dry_run ? ' · 演练模式' : '');
+
+    if(st && st.recent_log && st.recent_log.length){
+      document.getElementById('logbox').hidden = false;
+      document.getElementById('log').textContent = st.recent_log.slice().reverse().join('\n');
+    }
+  }catch(e){
+    document.getElementById('grid').innerHTML =
+      `<div class="empty">读取失败：${esc(e.message)}<br>面板数据接口需要管理密钥,请从 CPA 管理中心进入。</div>`;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('refresh').addEventListener('click', refresh);
+refresh();
+setInterval(refresh, 60000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) refresh(); });
+</script>
+</body>
+</html>

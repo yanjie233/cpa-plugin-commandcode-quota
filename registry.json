@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "plugins": [
+    {
+      "id": "commandcode-quota",
+      "name": "CommandCode Quota",
+      "description": "Command Code 余额感知调度:5 小时/周/月额度用光的账号在选号阶段直接跳过,不会先打过去再失败。带额度看板。",
+      "author": "yanjie233",
+      "version": "1.0.0",
+      "repository": "https://github.com/yanjie233/cpa-plugin-commandcode-quota",
+      "homepage": "https://github.com/yanjie233/cpa-plugin-commandcode-quota",
+      "license": "MIT",
+      "tags": ["scheduler", "quota", "commandcode", "dashboard"]
+    }
+  ]
+}
