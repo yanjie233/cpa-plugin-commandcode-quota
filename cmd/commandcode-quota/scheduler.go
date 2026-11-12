@@ -40,6 +40,9 @@ func pickAuth(raw []byte) ([]byte, error) {
 	}
 
 	cfg := currentConfig()
+	// 无条件记录调用,用于确认宿主是否真的把选号权交给我们。
+	pluginState.record(fmt.Sprintf("pick调用 provider=%q 候选=%d 模型=%s",
+		req.Provider, len(req.Candidates), req.Model), true)
 	if len(cfg.Providers) > 0 && !providerAllowed(cfg, req.Provider) {
 		return okEnvelope(pluginapi.SchedulerPickResponse{Handled: false})
 	}

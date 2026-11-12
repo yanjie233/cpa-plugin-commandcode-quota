@@ -1,1 +1,1 @@
-b9f11eefd83cdd046ee82413bf71bcd5e84380056c536682d458ac535efaa434  commandcode-quota_1.0.1_linux_amd64.zip
+9cddaf8d8162adfd38692e150d3c3bb8ccfc1933b998b2420be31fa18d8d0811  commandcode-quota_1.0.2_linux_amd64.zip

@@ -117,10 +117,10 @@ func collectQuota() []accountRow {
 	ctx, cancel := context.WithTimeout(context.Background(), secs(cfg.TimeoutSeconds))
 	defer cancel()
 
-	accounts := listHostAccounts()
-	if len(accounts) == 0 {
-		accounts = pluginState.knownAccounts()
-	}
+	// 优先用宿主凭据表;但 openai-compatibility 的 api-key-entries 不在
+	// 凭据表里(host.auth.list 只覆盖 auths/ 目录),这种情况下退回
+	// "选号时见过的候选"。这是本插件能看到全部 Command Code 账号的唯一途径。
+	accounts := mergeAccounts(listHostAccounts(), pluginState.knownAccounts())
 
 	out := make([]accountRow, 0, len(accounts))
 	for _, a := range accounts {
@@ -154,6 +154,29 @@ func collectQuota() []accountRow {
 		}
 		return out[i].Label < out[j].Label
 	})
+	return out
+}
+
+// mergeAccounts 合并两个来源,按 ID 去重(宿主凭据表优先)。
+func mergeAccounts(primary, secondary []account) []account {
+	seen := make(map[string]struct{}, len(primary)+len(secondary))
+	out := make([]account, 0, len(primary)+len(secondary))
+	for _, list := range [][]account{primary, secondary} {
+		for _, a := range list {
+			key := a.ID
+			if key == "" {
+				key = a.Label
+			}
+			if key == "" {
+				continue
+			}
+			if _, dup := seen[key]; dup {
+				continue
+			}
+			seen[key] = struct{}{}
+			out = append(out, a)
+		}
+	}
 	return out
 }
 
