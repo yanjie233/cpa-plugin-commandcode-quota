@@ -243,6 +243,13 @@ func safeHandle(method string, request []byte) (out []byte, err error) {
 }
 
 func handleMethod(method string, request []byte) ([]byte, error) {
+	// 诊断:记录宿主调用过哪些方法(注册/重载之外的方法才有诊断价值)。
+	switch method {
+	case pluginabi.MethodPluginRegister, pluginabi.MethodPluginReconfigure:
+	default:
+		pluginState.record("method:"+method, true)
+	}
+
 	switch method {
 	case pluginabi.MethodPluginRegister, pluginabi.MethodPluginReconfigure:
 		applyConfig(request)
